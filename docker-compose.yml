@@ -1,0 +1,33 @@
+services:
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres-franquicias
+    environment:
+      POSTGRES_DB: franquicias_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d franquicias_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  franquicias-api:
+    build: .
+    container_name: app-franquicias
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_R2DBC_URL: r2dbc:postgresql://postgres-db:5432/franquicias_db
+      SPRING_R2DBC_USERNAME: postgres
+      SPRING_R2DBC_PASSWORD: postgres
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+volumes:
+  postgres_data:
